@@ -1,24 +1,37 @@
 package com.sample.springredditclone.mapper;
 
+import com.github.marlonlom.utilities.timeago.TimeAgo;
 import com.sample.springredditclone.dto.PostRequest;
 import com.sample.springredditclone.dto.PostResponse;
 import com.sample.springredditclone.model.Post;
 import com.sample.springredditclone.model.Subreddit;
 import com.sample.springredditclone.model.User;
+import com.sample.springredditclone.repository.CommentRepository;
+import com.sample.springredditclone.repository.VoteRepository;
+import com.sample.springredditclone.service.AuthService;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(componentModel = "spring")
-public interface PostMapper {
+public abstract class PostMapper {
 
+    @Autowired
+    private CommentRepository commentRepository;
 
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private AuthService authService;
 
 
     @Mapping(target = "createdDate", expression = "java(java.time.Instant.now())")
     @Mapping(target = "description", source = "postRequest.description")
     @Mapping(target = "subreddit", source = "subreddit")
     @Mapping(target = "user", source = "user")
-    Post mapDtoToPost(PostRequest postRequest, User user, Subreddit subreddit);
+    @Mapping(target = "voteCount",constant = "0")
+    public abstract Post mapDtoToPost(PostRequest postRequest, User user, Subreddit subreddit);
 
 
     @Mapping(target = "id", source = "postId")
@@ -27,8 +40,17 @@ public interface PostMapper {
     @Mapping(target = "url", source = "url")
     @Mapping(target = "subredditName", source = "subreddit.name")
     @Mapping(target = "userName", source = "user.username")
-    PostResponse  postToPostResponse(Post post);
+    @Mapping(target = "commentCount", expression = "java(commentCount(post))")
+    @Mapping(target = "duration", expression = "java(getDuration(post))")
+    public abstract PostResponse  postToPostResponse(Post post);
 
+    Integer commentCount(Post post){
+        return commentRepository.findByPost(post).size();
+    }
+
+    String getDuration(Post post){
+        return TimeAgo.using(post.getCreatedDate().toEpochMilli());
+    }
 
 
 }
