@@ -4,6 +4,7 @@ import com.sample.springredditclone.exception.SpringRedditException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,14 @@ public class JWTProvider {
     //keytool -genkey -alias springblob -keyalg RSA -keystore springblog.jks -keysize 2048
     private KeyStore keyStore;
 
+
+    public Long getJwtExpirationTimeInMillis() {
+        return jwtExpirationTimeInMillis;
+    }
+
+    @Value("${jwt.expiration.time}")
+    private Long jwtExpirationTimeInMillis;
+
     @PostConstruct
     public void init() {
         try {
@@ -45,7 +54,18 @@ public class JWTProvider {
                 .setSubject(principal.getUsername())
                 .setIssuedAt(Date.from(Instant.now()))
                 .signWith(getPrivateKey())
-                .setExpiration(Date.from(Instant.now().plus(Duration.ofHours(1))))
+                .setExpiration(Date.from(Instant.now().plusMillis(jwtExpirationTimeInMillis)))
+                .compact();
+    }
+
+    public String generateTokenWithUserName(String userName){
+
+
+        return Jwts.builder()
+                .setSubject(userName)
+                .setIssuedAt(Date.from(Instant.now()))
+                .signWith(getPrivateKey())
+                .setExpiration(Date.from(Instant.now().plusMillis(jwtExpirationTimeInMillis)))
                 .compact();
     }
 
